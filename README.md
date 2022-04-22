@@ -1,2 +1,11 @@
-# public_moes
-Multi-Objective Ergodic Search
+# Multi-Objective Ergodic Search
+
+
+## Requirements
+
+
+## Instructions
+
+
+## Others
+

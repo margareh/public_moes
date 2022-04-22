@@ -41,8 +41,6 @@ def run_o2():
 
   ###### obj=2 test #########
 
-  print("runtime total = ", np.sum(time_list))
-
   #### temp plot traj time avg statistics.
   x = np.linspace(0,100,num=100)
   y = np.linspace(0,100,num=100)
@@ -93,8 +91,6 @@ def run_o3():
   erg_mat, u_list, pdf_list_scala, time_list, erg_list, iter_list = \
     bfs.solve(problem, n_basis=10, n_iter=total_iter, stop_eps=0.001, ifDisplay=False, delta=0.1)
   ####### obj=3 test #########
-
-  print("runtime total = ", np.sum(time_list))
 
   #### temp plot traj time avg statistics.
   x = np.linspace(0,100,num=100)
