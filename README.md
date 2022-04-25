@@ -30,7 +30,7 @@ More details can be found in our [paper]().
 
 ## Instructions
 
-* `python3 run_example.py` provides an entry point to the code.
+* File `run_example.py` provides an entry point to the code. Run it by using terminal command `python3 run_example.py`.
 
 
 ## Others
