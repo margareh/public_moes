@@ -11,7 +11,7 @@ To efficiently solve MOES, we develop a framework called Sequential Local Ergodi
 More details can be found in our [paper]().
 
 <p align="center">
-<img src="https://github.com/wonderren/wonderren.github.io/blob/master/images/fig_moes_overview.png" alt="" hspace="15" style=" border: #FFFFFF 2px none;">
+<img src="https://github.com/wonderren/wonderren.github.io/blob/master/images/fig_moes_overview.png" alt="" hspace="10" style=" border: #FFFFFF 2px none;">
 </p>
 
 (Fig 1: A conceptual visualization of the MOES problem and our method. (a) shows a search and rescue task in a hazardous material warehouse with leakage, where colored areas indicate different types of information/targets such as survivors, leakage sources, etc. (b) shows the weight space in the presence of three objectives (i.e. three info maps to be covered). (c) shows the scalarized info map, which is the weighted-sum of the three info maps, and an ergodic trajectory with respect to the scalarized info map. (d) visualizes the objective space, where each element is an ergodic vector that describes the ergodic metric of the computed trajectory with respect to each of the three info maps. The computed ergodic vectors approximate the Pareto-optimal front.)
