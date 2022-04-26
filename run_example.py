@@ -87,9 +87,9 @@ def run_o3():
   print("********* Run *********")
 
   ####### obj=3 test #########
-  bfs = bfs_o3.MOES_BFS_O3(0.2)
+  bfs = bfs_o3.MOES_BFS_O3(0.05)
   erg_mat, u_list, pdf_list_scala, time_list, erg_list, iter_list = \
-    bfs.solve(problem, n_basis=10, n_iter=total_iter, stop_eps=0.001, ifDisplay=False, delta=0.1)
+    bfs.solve(problem, n_basis=10, n_iter=total_iter, stop_eps=0.001, ifDisplay=True, delta=0.1)
   ####### obj=3 test #########
 
   #### temp plot traj time avg statistics.
@@ -124,8 +124,8 @@ def run_o3():
 
 if __name__ == "__main__":
 
-  run_o2()
+  # run_o2()
   
-  # run_o3()
+  run_o3()
 
 

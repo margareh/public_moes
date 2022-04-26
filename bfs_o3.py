@@ -2,7 +2,9 @@
 import time
 import queue
 import sys
-import numpy
+import numpy as np
+import numpy.linalg
+import scipy.linalg
 import matplotlib.pyplot as plt
 from mpl_toolkits.mplot3d import Axes3D # for 3d Pareto-front
 
@@ -13,8 +15,10 @@ def constructTriangle(l1,l2,l3):
   """
   """
   if (l1+l2 < l3) or (l2+l3 < l1) or (l1+l3 < l2):
-    print(" l123 = ", l1, l2, l3, " cannot form a triangle...")
-    sys.exit("[ERROR] Given numbers cannot form a triangle!")
+    print("[WARNING] l123 = ", l1, l2, l3, " cannot form a triangle... (due to numerical errors), maybe increase #Fouriers and grid resolution.")
+    print("[WARNING] will do non-adaptive version ")
+    return False, []
+    # sys.exit("[ERROR] Given numbers cannot form a triangle!")
   pt1 = [0,0]
   pt2 = [l1,0]
   # law of consine
@@ -22,26 +26,55 @@ def constructTriangle(l1,l2,l3):
   print(" theta = ", theta)
   pt3 = [numpy.cos(theta)*l2, numpy.sin(theta)*l2]
   print("constructed triangle:", pt1, pt2, pt3)
-  return pt1,pt2,pt3
+  return True, [pt1,pt2,pt3]
+
+# def findAffineTF(pt1,pt2,pt3):
+#   """
+#   the an affine map x'=Ax+b, that can map each corner point of triangle pt1,pt2,pt3
+#   to a triangle (0,0),(0,1),(1,0)
+#   Note that b=(0,0) since pt1 is always zero.
+#   """
+#   if (pt1[0] != 0) or (pt1[1] != 0) or (pt2[1] != 0):
+#     sys.exit("[ERROR] input triangle pt1 is not (0,0), not implemented.")
+#   # a11*l1 + a12*0 = 1
+#   a11 = 1.0/pt2[0]
+#   # a21*l1 + a22*0 = 0
+#   a21 = 0
+#   # a11*pt3x + a12*pt3y = 0
+#   a12 = -a11*pt3[0]/pt3[1]
+#   # a21*pt3x + a22*pt3y = 1
+#   a22 = 1.0/pt3[1]
+#   # return A, b
+#   return numpy.array([[a11,a12],[a21,a22]]), numpy.array([0,0])
 
 def findAffineTF(pt1,pt2,pt3):
   """
-  the an affine map x'=Ax+b, that can map each corner point of triangle pt1,pt2,pt3
-  to a triangle (0,0),(0,1),(1,0)
-  Note that b=(0,0) since pt1 is always zero.
   """
-  if (pt1[0] != 0) or (pt1[1] != 0) or (pt2[1] != 0):
-    sys.exit("[ERROR] input triangle pt1 is not (0,0), not implemented.")
-  # a11*l1 + a12*0 = 1
-  a11 = 1.0/pt2[0]
-  # a21*l1 + a22*0 = 0
-  a21 = 0
-  # a11*pt3x + a12*pt3y = 0
-  a12 = -a11*pt3[0]/pt3[1]
-  # a21*pt3x + a22*pt3y = 1
-  a22 = 1.0/pt3[1]
-  # return A, b
-  return numpy.array([[a11,a12],[a21,a22]]), numpy.array([0,0])
+  D = np.array([[pt1[0], pt1[1], 0, 0, 1, 0],
+                [0, 0, pt1[0], pt1[1], 0, 1],
+                [pt2[0], pt2[1], 0, 0, 1, 0],
+                [0, 0, pt2[0], pt2[1], 0, 1],
+                [pt3[0], pt3[1], 0, 0, 1, 0],
+                [0, 0, pt3[0], pt3[1], 0, 1] ])
+
+  # Some technical details about d here.
+  # Here, I am being lazy.
+  # The weight space B should be of coordinate (0,0), (1,0), (1/2, sqrt(3)/2). And a subsequent
+  # transformation(*) from the coordinate in B to the actualy weight vector is needed.
+  # Here, I simply make the coordinate of the corners of B to be (0,0), (1,0), (0,1), which
+  # saves me the efforts to implement the transformation(*). But this may introduce slight
+  # bias in the weight sampling process.
+  d = np.array([0, 0, 1, 0, 0, 1])
+
+  if numpy.linalg.cond(D) < 1/sys.float_info.epsilon:
+    sol = numpy.linalg.solve(D,d)
+    A = np.array([ [sol[0],sol[1]],[sol[2],sol[3]] ])
+    b = np.array([sol[4],sol[5]])
+    return A,b
+  else:
+    # if matrix D is not invertible, A-SLES should not be used.
+    print("[WARNING] matrix non-invertible (possibly three points are co-linear), fall back to non-adaptive version.")
+    return np.array([[1,0],[0,1]]), np.array([0,0])
 
 class MOES_BFS_O3(object):
   """
@@ -210,12 +243,29 @@ class MOES_BFS_O3(object):
     print(">>> computed ergs = ", self.erg12, self.erg23, self.erg31)
 
     ### find the transformation
-    # this TF should take a weight ID (e.g. (3,4)), return a weight vector (w1,w2,w3).
-    self.pt1, self.pt2, self.pt3 = constructTriangle(self.erg12, self.erg23, self.erg31)
-    self.A, self.b = findAffineTF(self.pt1,self.pt2,self.pt3)
+
+    if self.adaptive:
+      flag, tri_pts = constructTriangle(self.erg12, self.erg23, self.erg31)
+      if not flag:
+        self.pt1 = np.array([0,0])
+        self.pt2 = np.array([1,0])
+        self.pt3 = np.array([0,1])
+        self.A = np.array([[1,0],[0,1]])
+        self.b = np.array([0,0])
+      else:
+        self.pt1 = tri_pts[0]
+        self.pt2 = tri_pts[1]
+        self.pt3 = tri_pts[2]
+        self.A, self.b = findAffineTF(self.pt1,self.pt2,self.pt3)
+    else:
+      self.pt1 = np.array([0,0])
+      self.pt2 = np.array([1,0])
+      self.pt3 = np.array([0,1])
+      self.A = np.array([[1,0],[0,1]])
+      self.b = np.array([0,0])
 
     ### add to OPEN, init some data
-    # w0 = tuple([6,1]) # for that video
+    # w0 = tuple([6,1]) # for the video
     w0 = tuple([0,0])
     self.open_queue.put(w0)
     self.w_dict[w0] = self._getWeight(w0)
