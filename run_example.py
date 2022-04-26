@@ -114,9 +114,6 @@ def run_o3():
   axs[1, 0].plot(tj[:,0]*100,tj[:,1]*100, "r.--")
   axs[1, 0].set_title('Traj Time Avg. Stat.')
 
-  axs[1, 1].plot(erg_mat[:,0], erg_mat[:,1], 'ro', alpha=0.5, label="Aggregation")
-  axs[1, 0].set_title('Pareto-Optimal Front')
-
   plt.show()
 
   return 
