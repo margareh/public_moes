@@ -8,7 +8,7 @@ However, in many scenarios, the use of multiple information maps that encode dif
 Ergodic search methods currently do not possess the ability for simultaneous nor do they have a way to balance which information gets priority.
 This leads us to formulate a Multi-Objective Ergodic Search (MOES) problem, which aims at finding the so-called Pareto-optimal solutions, for the purpose of providing human decision makers various solutions that trade off between conflicting criteria.
 To efficiently solve MOES, we develop a framework called Sequential Local Ergodic Search (SLES) that converts a MOES problem into a "weight space coverage" problem. It leverages the recent advances in ergodic search methods as well as the idea of local optimization to efficiently approximate the Pareto-optimal front.
-More details can be found in our [paper]().
+More details can be found in our [paper](http://www.roboticsproceedings.org/rss18/p052.pdf), [video](https://youtu.be/SEkwti-pGjE) or [contact](https://wonderren.github.io/).
 
 <p align="center">
 <img src="https://github.com/wonderren/wonderren.github.io/blob/master/images/fig_moes_overview.png" alt="" hspace="10" width=500 style=" border: #FFFFFF 2px none;">
@@ -33,10 +33,7 @@ More details can be found in our [paper]().
 * File `run_example.py` provides an entry point to the code. Run it by using terminal command `python3 run_example.py`.
 
 
-## Others
+## References and Others
 
-### References
-
-TODO
-
+[1] Ren, Zhongqiang, Akshaya Kesarimangalam Srinivasan, Howard Coffin, Ian Abraham and Howie Choset. "A Local Optimization Framework for Multi-Objective Ergodic Search." in Proceedings of Robotics: Science and Systems, New York City, NY, USA, June 2022.
 
