@@ -65,7 +65,7 @@ def ErgodicDiff(calc1,calc2):
   """
   """
   lamk = calc1.lamk
-  return np.sum(lamk*np.square(calc1.phik - calc2.phik))
+  return np.sqrt( np.sum(lamk*np.square(calc1.phik - calc2.phik)) )
 
 def AdaptiveGenerateWeights(pbm, n_obj, delta=0.1):
   """
