@@ -1,7 +1,8 @@
 
 import numpy as onp
 import jax.numpy as np
-from jax.experimental import optimizers
+# from jax.experimental import optimizers
+from jax.example_libraries import optimizers
 
 import matplotlib.pyplot as plt
 import ergodic_metric
