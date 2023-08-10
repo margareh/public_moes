@@ -5,7 +5,7 @@ import jax.numpy as np
 from jax.example_libraries import optimizers
 
 import matplotlib.pyplot as plt
-import ergodic_metric
+import public_moes.ergodic_metric as ergodic_metric
 
 GLOBAL_NUM_K = 0
 
