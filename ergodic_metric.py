@@ -117,3 +117,99 @@ class ErgCalc(object):
 		_s = np.stack([X.ravel(), Y.ravel()]).T
 		pdf = np.dot(ck, vmap(self.fk_vmap, in_axes=(None, 0))(_s, self.k)).reshape(X.shape)
 		return pdf
+	
+
+class GPErgCalc(object):
+	"""
+	modified from public_moes, which was modified from Ian's Ergodic Coverage code base.
+	"""
+	def __init__(self, pdf, fourier_freqs=None, freq_vars=None, nPix=100):
+		self.nPix = nPix
+		# aux func
+		self.fk_vmap = lambda _x, _k: vmap(fk, in_axes=(0,None))(_x, _k)
+
+		# get fourier frequencies
+		if fourier_freqs is None:
+			n_fourier=10
+
+			# fourier indices
+			k1, k2 = np.meshgrid(*[np.arange(0, n_fourier, step=1)]*2)
+			k = np.stack([k1.ravel(), k2.ravel()]).T
+			self.k = np.pi*k
+
+		else:
+			# TODO: use fourier frequencies to create k instead of desired number of features
+			pass
+
+		if freq_vars is None:
+			# lambda, the weights of different bands.
+			self.lamk = (1.+np.linalg.norm(self.k/np.pi,axis=1)**2)**(-4./2.)
+		else:
+			# TODO: define weights based on variance of GMM components from kernel
+			pass
+
+		# the normalization factor
+		hk = []
+		for ki in k:
+			hk.append(get_hk(ki))
+		self.hk = np.array(hk)
+
+		# compute phik
+		X,Y = np.meshgrid(*[np.linspace(0,1,num=self.nPix)]*2)
+		_s = np.stack([X.ravel(), Y.ravel()]).T
+		phik = np.dot(vmap(self.fk_vmap, in_axes=(None, 0))(_s, self.k), pdf) #vmap(p)(_s)
+		phik = phik/phik[0]
+		self.phik = phik/self.hk
+
+		# for reconstruction
+		self.phik_recon = np.dot(self.phik, vmap(self.fk_vmap, in_axes=(None, 0))(_s, self.k)).reshape(X.shape)
+		
+		# to compute gradient func
+		self.gradient = jit(grad(self.fourier_ergodic_loss))
+
+		return
+
+	def get_ck(self, tr):
+		"""
+		given a trajectory tr, compute fourier coeffient of its spatial statistics.
+		k is the number of fourier coeffs.
+		"""
+		ck = np.mean(vmap(partial(self.fk_vmap, tr))(self.k), axis=1)
+		ck = ck / self.hk
+		return ck
+
+	def fourier_ergodic_loss(self, u, x0):
+		xf, tr = GetTrajXY(u, x0)
+		ck = self.get_ck(tr)
+		# return np.sum(self.lamk*np.square(self.phik - ck)) \
+		    #+ 1e-2 * np.mean(u[:,0]**2) + 3e-3*np.mean(u[:,1]**2)
+		return np.sum(self.lamk*np.square(self.phik - ck)) \
+			+ 3e-2 * np.mean(u**2) + np.mean((tr - np.array([0.5,0.5]))**8)
+
+	def spectral_decomposition(self,nPix=100): # some question to discuss
+		phik1 = self.phik
+		phik2 = self.phik
+		for i in range(len(self.phik)):
+		  if i < len(self.phik)/2:
+		    phik1 = phik1.at[i].set(0)
+		  else:
+		  	phik2 = phik2.at[i].set(0)
+
+		print("phik filtered: ", phik1)
+		print("phik filtered 2: ", phik2)
+		# phik2 = self.phik - phik1
+		X,Y = np.meshgrid(*[np.linspace(0,1,num=nPix)]*2)
+		_s = np.stack([X.ravel(), Y.ravel()]).T
+		pdf1 = np.dot(phik1, vmap(self.fk_vmap, in_axes=(None, 0))(_s, self.k)).reshape(X.shape)
+		pdf2 = np.dot(phik2, vmap(self.fk_vmap, in_axes=(None, 0))(_s, self.k)).reshape(X.shape)
+		return pdf1, pdf2
+
+	def traj_stat(self, u, x0):
+		"""
+		"""
+		xf, tr = GetTrajXY(u, x0)
+		ck = self.get_ck(tr)
+		X,Y = np.meshgrid(*[np.linspace(0,1,num=self.nPix)]*2)
+		_s = np.stack([X.ravel(), Y.ravel()]).T
+		pdf = np.dot(ck, vmap(self.fk_vmap, in_axes=(None, 0))(_s, self.k)).reshape(X.shape)
+		return pdf
