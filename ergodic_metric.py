@@ -138,15 +138,13 @@ class GPErgCalc(object):
 			self.k = np.pi*k
 
 		else:
-			# TODO: use fourier frequencies to create k instead of desired number of features
-			pass
+			self.k = np.array(fourier_freqs) * np.pi
 
 		if freq_vars is None:
 			# lambda, the weights of different bands.
 			self.lamk = (1.+np.linalg.norm(self.k/np.pi,axis=1)**2)**(-4./2.)
 		else:
-			# TODO: define weights based on variance of GMM components from kernel
-			pass
+			self.lamk = 1 / np.prod(np.sqrt(np.array(freq_vars)), axis=1)
 
 		# the normalization factor
 		hk = []
