@@ -66,7 +66,11 @@ def GPErgCover(pdf, nA, s0, nPix, nIter, fourier_freqs=None, freq_vars=None, u_i
 	run ergodic coverage over a info map. Modified from public_moes, which was modified from Ian's code.
 	return a list of control inputs.
 	"""
-	n_fourier = len(fourier_freqs)
+	if fourier_freqs is None:
+		n_fourier = 10
+	else:
+		n_fourier = len(fourier_freqs)
+	
 	print("[INFO] ErgCover, nA =", nA, " s0 =", s0, " n_fourier =", n_fourier, " stop_eps =", stop_eps)
 	erg_calc = ergodic_metric.GPErgCalc(pdf, fourier_freqs, freq_vars, nPix)
 
@@ -84,20 +88,30 @@ def GPErgCover(pdf, nA, s0, nPix, nIter, fourier_freqs=None, freq_vars=None, u_i
 	opt_state = opt_init(u)
 	log = []
 
-	if stop_eps > 0:
-		nIter = int(1e5) # set a large number, stop until converge.
+	# if stop_eps > 0:
+	# 	nIter = int(1e5) # set a large number, stop until converge.
 
 	i = 0
-	for i in range(nIter):
+	loss = 1e5 # start with high loss to pass first check
+	while (i < nIter) and (loss >= stop_eps):
+	# for i in range(nIter):
 		g = erg_calc.gradient(get_params(opt_state), x0)
 		opt_state = opt_update(i, g, opt_state)
 		u = get_params(opt_state)
-		log.append(erg_calc.fourier_ergodic_loss(u, x0).copy())
+		erg_loss = erg_calc.fourier_ergodic_loss(u, x0).copy()
+		loss = onp.abs(erg_loss)
+		log.append(erg_loss)
 
-		## check for convergence
-		if i > 10 and stop_eps > 0: # at least 10 iterationss
-			if onp.abs(log[-1]) < stop_eps:
-				break
+		if i % 10 == 0:
+			print("[INFO] Iteration {:d} of {:d}, ergodic metric is {:4.2f}".format(i, nIter, erg_loss))
 
-	return get_params(opt_state), log, i
+		# ## check for convergence
+		# if i > 10 and stop_eps > 0: # at least 10 iterationss
+		# 	if onp.abs(log[-1]) < stop_eps:
+		# 		break
+		
+		# increment counter
+		i += 1
+
+	return get_params(opt_state), np.array(log), i
 

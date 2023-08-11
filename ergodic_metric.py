@@ -135,10 +135,11 @@ class GPErgCalc(object):
 			# fourier indices
 			k1, k2 = np.meshgrid(*[np.arange(0, n_fourier, step=1)]*2)
 			k = np.stack([k1.ravel(), k2.ravel()]).T
-			self.k = np.pi*k
 
 		else:
-			self.k = np.array(fourier_freqs) * np.pi
+			k = np.array(fourier_freqs)
+
+		self.k = np.pi*k
 
 		if freq_vars is None:
 			# lambda, the weights of different bands.
