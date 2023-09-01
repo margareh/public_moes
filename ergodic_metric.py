@@ -1,6 +1,7 @@
 
 import numpy as onp
 import sys
+import copy
 
 from jax import vmap, jit, grad
 import jax.numpy as np
@@ -28,11 +29,14 @@ def get_hk(k): # normalizing factor for basis function
 def fk(x, k): # basis function
     return np.prod(np.cos(x*k))
 
-def GetTrajXY(u, x0):
+def GetTrajXY(u, x0, all=False):
 	"""
 	"""
 	xf, tr0 = scan(fDiffDrive, x0, u)
-	tr = tr0[:,0:2] # take the first two dim
+	if all:
+		tr = copy.copy(tr0)
+	else:
+		tr = tr0[:,0:2] # take the first two dim
 	return xf, tr
 
 class ErgCalc(object):
