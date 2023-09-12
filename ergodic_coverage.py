@@ -116,7 +116,7 @@ def GPErgCover(pdf, nA, s0, nPix, nIter, fourier_freqs=None, freq_vars=None, u_i
 		i += 1
 
 	if pdf_gt is not None:
-		erg_gt = ergodic_metric.GPErgCalc(pdf_gt, fourier_freqs, freq_vars, nPix, scale).fourier_ergodic_loss(u, x0).copy()
+		erg_gt = ergodic_metric.GPErgCalc(pdf_gt, None, None, nPix, 1).fourier_ergodic_loss(u, x0).copy()
 	else:
 		erg_gt = None
 
