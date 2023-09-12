@@ -31,20 +31,22 @@ def ErgCover(pdf, nA, s0, n_fourier, nPix, nIter, ifDisplay, u_init=None, stop_e
 	opt_state = opt_init(u)
 	log = []
 
-	if stop_eps > 0:
-		nIter = int(1e5) # set a large number, stop until converge.
+	# if stop_eps > 0:
+	# 	nIter = int(1e5) # set a large number, stop until converge.
 
 	i = 0
-	for i in range(nIter):
+	loss = 1e5
+	while (i < nIter) and (loss >= stop_eps):
+	# for i in range(nIter):
 		g = erg_calc.gradient(get_params(opt_state), x0)
 		opt_state = opt_update(i, g, opt_state)
 		u = get_params(opt_state)
 		log.append(erg_calc.fourier_ergodic_loss(u, x0).copy())
 
-		## check for convergence
-		if i > 10 and stop_eps > 0: # at least 10 iterationss
-			if onp.abs(log[-1]) < stop_eps:
-				break
+		# ## check for convergence
+		# if i > 10 and stop_eps > 0: # at least 10 iterationss
+		# 	if onp.abs(log[-1]) < stop_eps:
+		# 		break
 
 	if ifDisplay : # final traj
 		plt.figure(figsize=(5,5))
