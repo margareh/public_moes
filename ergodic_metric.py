@@ -127,7 +127,7 @@ class GPErgCalc(object):
 	"""
 	modified from public_moes, which was modified from Ian's Ergodic Coverage code base.
 	"""
-	def __init__(self, pdf, fourier_freqs=None, freq_vars=None, nPix=100):
+	def __init__(self, pdf, fourier_freqs=None, freq_vars=None, nPix=100, scale=1):
 		self.nPix = nPix
 		# aux func
 		self.fk_vmap = lambda _x, _k: vmap(fk, in_axes=(0,None))(_x, _k)
@@ -147,7 +147,7 @@ class GPErgCalc(object):
 
 		if freq_vars is None:
 			# lambda, the weights of different bands.
-			self.lamk = (1.+np.linalg.norm(self.k/np.pi,axis=1)**2)**(-4./2.)
+			self.lamk = (1.+np.linalg.norm(self.k/(np.pi*scale),axis=1)**2)**(-4./2.)
 		else:
 			self.lamk = 1 / np.prod(np.sqrt(np.array(freq_vars)), axis=1)
 

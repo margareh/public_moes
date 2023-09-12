@@ -63,7 +63,7 @@ def ErgCover(pdf, nA, s0, n_fourier, nPix, nIter, ifDisplay, u_init=None, stop_e
 	return get_params(opt_state), log, i
 
 
-def GPErgCover(pdf, nA, s0, nPix, nIter, fourier_freqs=None, freq_vars=None, u_init=None, stop_eps=-1, pdf_gt=None):
+def GPErgCover(pdf, nA, s0, nPix, nIter, fourier_freqs=None, freq_vars=None, u_init=None, stop_eps=-1, pdf_gt=None, scale=1):
 	"""
 	run ergodic coverage over a info map. Modified from public_moes, which was modified from Ian's code.
 	return a list of control inputs.
@@ -74,7 +74,7 @@ def GPErgCover(pdf, nA, s0, nPix, nIter, fourier_freqs=None, freq_vars=None, u_i
 		n_fourier = len(fourier_freqs)
 	
 	print("[INFO] ErgCover, nA =", nA, " s0 =", s0, " n_fourier =", n_fourier, " stop_eps =", stop_eps)
-	erg_calc = ergodic_metric.GPErgCalc(pdf, fourier_freqs, freq_vars, nPix)
+	erg_calc = ergodic_metric.GPErgCalc(pdf, fourier_freqs, freq_vars, nPix, scale)
 
 	opt_init, opt_update, get_params = optimizers.adam(1e-3)
 
@@ -116,7 +116,7 @@ def GPErgCover(pdf, nA, s0, nPix, nIter, fourier_freqs=None, freq_vars=None, u_i
 		i += 1
 
 	if pdf_gt is not None:
-		erg_gt = ergodic_metric.GPErgCalc(pdf_gt, fourier_freqs, freq_vars, nPix).fourier_ergodic_loss(u, x0).copy()
+		erg_gt = ergodic_metric.GPErgCalc(pdf_gt, fourier_freqs, freq_vars, nPix, scale).fourier_ergodic_loss(u, x0).copy()
 	else:
 		erg_gt = None
 
