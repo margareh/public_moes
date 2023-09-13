@@ -92,7 +92,7 @@ class ErgCalc(object):
 		# return np.sum(self.lamk*np.square(self.phik - ck)) \
 		    #+ 1e-2 * np.mean(u[:,0]**2) + 3e-3*np.mean(u[:,1]**2)
 		return np.sum(self.lamk*np.square(self.phik - ck)) \
-			+ 3e-2 * np.mean(u**2) + np.mean((tr - np.array([0.5,0.5]))**8)
+			+ 3e-2 * np.mean(u**2) + np.mean((tr - np.array([0.5,0.5]))**10)
 
 	def spectral_decomposition(self,nPix=100): # some question to discuss
 		phik1 = self.phik
