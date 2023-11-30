@@ -8,6 +8,9 @@ import jax.numpy as np
 from jax.lax import scan
 from functools import partial
 
+ERG_COEF = 1 # 1
+REG_COEF = 0.03 # 3e-2
+BOUND_COEF = 1000 # 10
 
 # def fDyn(x, u): # dynamics of the robot
 # 	xnew = x + np.tanh(u)
@@ -93,8 +96,8 @@ class ErgCalc(object):
 		    #+ 1e-2 * np.mean(u[:,0]**2) + 3e-3*np.mean(u[:,1]**2)
 		# return np.sum(self.lamk*np.square(self.phik - ck)) \
 		# 	+ 3e-2 * np.mean(u**2) + np.mean((tr - np.array([0.5,0.5]))**10)
-		return np.sum(self.lamk*np.square(self.phik - ck)) \
-			+ 3e-2 * np.mean(u**2) + 10 * np.sum(np.max(tr - 1,0)**2 + np.min(tr, 0)**2)
+		return ERG_COEF * np.sum(self.lamk*np.square(self.phik - ck)) \
+			+ REG_COEF * np.mean(u**2) + BOUND_COEF * np.sum(np.maximum(0, tr-1)**2 + np.maximum(0, -tr)**2)
 
 	def spectral_decomposition(self,nPix=100): # some question to discuss
 		phik1 = self.phik
@@ -130,6 +133,11 @@ class GPErgCalc(object):
 	modified from public_moes, which was modified from Ian's Ergodic Coverage code base.
 	"""
 	def __init__(self, pdf, fourier_freqs=None, freq_vars=None, nPix=100, scale=1):
+
+		# truncate the PDF to [0,1]
+		pdf[pdf < 0] = 0.0001
+		pdf[pdf > 1] = 1-0.0001
+
 		self.nPix = nPix
 		# aux func
 		self.fk_vmap = lambda _x, _k: vmap(fk, in_axes=(0,None))(_x, _k)
@@ -183,13 +191,18 @@ class GPErgCalc(object):
 		ck = ck / self.hk
 		return ck
 
-	def fourier_ergodic_loss(self, u, x0):
+	def fourier_ergodic_loss(self, u, x0, print_flag=False):
 		xf, tr = GetTrajXY(u, x0)
 		ck = self.get_ck(tr)
 		# return np.sum(self.lamk*np.square(self.phik - ck)) \
 		    #+ 1e-2 * np.mean(u[:,0]**2) + 3e-3*np.mean(u[:,1]**2)
-		return np.sum(self.lamk*np.square(self.phik - ck)) \
-			+ 3e-2 * np.mean(u**2) + np.mean((tr - np.array([0.5,0.5]))**8)
+		erg_loss = np.sum(self.lamk*np.square(self.phik - ck))
+		control_loss = np.mean(u**2)
+		bound_loss = np.sum(np.maximum(0, tr-1) + np.maximum(0, -tr))
+		if print_flag:
+			print("LOSS: erg = {:4.4f}, control = {:4.4f}, boundary = {:4.4f}".format(erg_loss, control_loss, bound_loss))
+
+		return (ERG_COEF * erg_loss) + (REG_COEF * control_loss) + (BOUND_COEF * bound_loss)
 
 	def spectral_decomposition(self,nPix=100): # some question to discuss
 		phik1 = self.phik

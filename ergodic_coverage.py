@@ -3,6 +3,7 @@ import numpy as onp
 import jax.numpy as np
 # from jax.experimental import optimizers
 from jax.example_libraries import optimizers
+import copy
 
 import matplotlib.pyplot as plt
 import public_moes.ergodic_metric as ergodic_metric
@@ -95,17 +96,35 @@ def GPErgCover(pdf, nA, s0, nPix, nIter, fourier_freqs=None, freq_vars=None, u_i
 
 	i = 0
 	loss = 1e5 # start with high loss to pass first check
+	prev_loss = 0
+	no_change_count = 0
+	print_flag = False
 	while (i < nIter) and (loss >= stop_eps):
 	# for i in range(nIter):
+
+		# stop if haven't changed for a set number of iters
+		if no_change_count > 100:
+			break
+
 		g = erg_calc.gradient(get_params(opt_state), x0)
 		opt_state = opt_update(i, g, opt_state)
 		u = get_params(opt_state)
-		erg_loss = erg_calc.fourier_ergodic_loss(u, x0).copy()
+
+		print_flag = True if i % 100 == 0 else False
+		erg_loss = erg_calc.fourier_ergodic_loss(u, x0, print_flag).copy()
+
 		loss = onp.abs(erg_loss)
 		log.append(erg_loss)
+		
+		if i > 0:
+			if np.abs(loss - prev_loss) < stop_eps:
+				no_change_count += 1
+			else:
+				no_change_count = 0
+		prev_loss = copy.copy(loss)
 
 		if i % 100 == 0:
-			print("[INFO] Iteration {:d} of {:d}, ergodic metric is {:4.2f}".format(i, nIter, erg_loss))
+			print("[INFO] Iteration {:d} of {:d}, ergodic metric is {:4.2f}".format(i, nIter, erg_loss))		
 
 		# ## check for convergence
 		# if i > 10 and stop_eps > 0: # at least 10 iterationss
@@ -115,10 +134,14 @@ def GPErgCover(pdf, nA, s0, nPix, nIter, fourier_freqs=None, freq_vars=None, u_i
 		# increment counter
 		i += 1
 
+	# get the map predicted by the trajectory stats
+	traj_map = erg_calc.traj_stat(get_params(opt_state), x0)
+
+	# get ergodic metric on ground truth map if available using usual frequencies
 	if pdf_gt is not None:
 		erg_gt = ergodic_metric.GPErgCalc(pdf_gt, None, None, nPix, 1).fourier_ergodic_loss(u, x0).copy()
 	else:
 		erg_gt = None
 
-	return get_params(opt_state), np.array(log), i, erg_gt
+	return get_params(opt_state), np.array(log), i, erg_gt, traj_map
 
