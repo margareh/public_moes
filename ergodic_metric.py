@@ -9,7 +9,7 @@ from jax.lax import scan
 from functools import partial
 
 ERG_COEF = 1 # 1
-REG_COEF = 0.03 # 3e-2
+REG_COEF = 0.01 # 3e-2
 BOUND_COEF = 1000 # 10
 
 # def fDyn(x, u): # dynamics of the robot
@@ -133,10 +133,6 @@ class GPErgCalc(object):
 	modified from public_moes, which was modified from Ian's Ergodic Coverage code base.
 	"""
 	def __init__(self, pdf, fourier_freqs=None, freq_vars=None, nPix=100, scale=1):
-
-		# truncate the PDF to [0,1]
-		pdf[pdf < 0] = 0.0001
-		pdf[pdf > 1] = 1-0.0001
 
 		self.nPix = nPix
 		# aux func
