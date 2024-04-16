@@ -11,6 +11,9 @@ from functools import partial
 ERG_COEF = 1 # 1
 REG_COEF = 0.01 # 3e-2
 BOUND_COEF = 1000 # 10
+TRANSL_COEF = 1 / 3
+ANG_COEF = 2 / 3
+TARGET_V = 1
 
 # def fDyn(x, u): # dynamics of the robot
 # 	xnew = x + np.tanh(u)
@@ -151,11 +154,12 @@ class GPErgCalc(object):
 
 		self.k = np.pi*k
 
-		if freq_vars is None:
+		# if freq_vars is None:
 			# lambda, the weights of different bands.
-			self.lamk = (1.+np.linalg.norm(self.k/(np.pi*scale),axis=1)**2)**(-4./2.)
-		else:
-			self.lamk = 1 / np.prod(np.sqrt(np.array(freq_vars)), axis=1)
+		self.lamk = (1.+np.linalg.norm(self.k/(np.pi*scale),axis=1)**2)**(-3./2.)
+		if freq_vars is not None:
+			# self.lamk = 1 / np.prod(np.sqrt(np.array(freq_vars)), axis=1)
+			self.lamk = np.array(freq_vars) * self.lamk
 
 		# the normalization factor
 		hk = []
@@ -193,12 +197,14 @@ class GPErgCalc(object):
 		# return np.sum(self.lamk*np.square(self.phik - ck)) \
 		    #+ 1e-2 * np.mean(u[:,0]**2) + 3e-3*np.mean(u[:,1]**2)
 		erg_loss = np.sum(self.lamk*np.square(self.phik - ck))
-		control_loss = np.mean(u**2)
+		# control_loss = np.mean(u**2)
+		ang_loss = np.mean(u[:,1]**2, axis=0)
+		control_loss = np.mean((u[:,0]-TARGET_V)**2, axis=0)
 		bound_loss = np.sum(np.maximum(0, tr-1) + np.maximum(0, -tr))
 		if print_flag:
-			print("LOSS: erg = {:4.4f}, control = {:4.4f}, boundary = {:4.4f}".format(erg_loss, control_loss, bound_loss))
+			print("LOSS: erg = {:4.4f}; control = {:4.4f}, {:4.4f}; boundary = {:4.4f}".format(erg_loss, control_loss, ang_loss, bound_loss))
 
-		return (ERG_COEF * erg_loss) + (REG_COEF * control_loss) + (BOUND_COEF * bound_loss)
+		return (ERG_COEF * erg_loss) + (REG_COEF * (TRANSL_COEF*control_loss+ANG_COEF*ang_loss)) + (BOUND_COEF * bound_loss)
 
 	def spectral_decomposition(self,nPix=100): # some question to discuss
 		phik1 = self.phik
