@@ -9,11 +9,11 @@ from jax.lax import scan
 from functools import partial
 
 ERG_COEF = 1 # 1
-REG_COEF = 0.01 # 3e-2
+REG_COEF = 0.03 # 3e-2
 BOUND_COEF = 1000 # 10
 TRANSL_COEF = 1 / 3
 ANG_COEF = 2 / 3
-TARGET_V = 1
+TARGET_V = 1 # in pixels
 
 # def fDyn(x, u): # dynamics of the robot
 # 	xnew = x + np.tanh(u)
@@ -137,6 +137,9 @@ class GPErgCalc(object):
 	"""
 	def __init__(self, pdf, fourier_freqs=None, freq_vars=None, nPix=100, scale=1):
 
+		# set target velocity based on number of pixels
+		self.target_v = TARGET_V / nPix
+
 		self.nPix = nPix
 		# aux func
 		self.fk_vmap = lambda _x, _k: vmap(fk, in_axes=(0,None))(_x, _k)
@@ -199,7 +202,7 @@ class GPErgCalc(object):
 		erg_loss = np.sum(self.lamk*np.square(self.phik - ck))
 		# control_loss = np.mean(u**2)
 		ang_loss = np.mean(u[:,1]**2, axis=0)
-		control_loss = np.mean((u[:,0]-TARGET_V)**2, axis=0)
+		control_loss = np.mean((u[:,0]-self.target_v)**2, axis=0)
 		bound_loss = np.sum(np.maximum(0, tr-1) + np.maximum(0, -tr))
 		if print_flag:
 			print("LOSS: erg = {:4.4f}; control = {:4.4f}, {:4.4f}; boundary = {:4.4f}".format(erg_loss, control_loss, ang_loss, bound_loss))
