@@ -73,11 +73,14 @@ def GPErgCover(pdf, nA, s0, nPix, nIter, fourier_freqs=None, freq_vars=None, u_i
 		n_fourier = 10
 	else:
 		n_fourier = len(fourier_freqs)
+
+	# scale the pdf to [0,1]
+	pdf_norm = (pdf - np.min(pdf)) / (np.max(pdf) - np.min(pdf))
 	
 	print("[INFO] ErgCover, nA =", nA, " s0 =", s0, " n_fourier =", n_fourier, " stop_eps =", stop_eps)
-	erg_calc = ergodic_metric.GPErgCalc(pdf, fourier_freqs, freq_vars, nPix, scale)
+	erg_calc = ergodic_metric.GPErgCalc(pdf_norm, fourier_freqs, freq_vars, nPix, scale)
 
-	opt_init, opt_update, get_params = optimizers.adam(3e-4)
+	opt_init, opt_update, get_params = optimizers.adam(1e-4)
 
 	# initial conditions
 	x0 = np.array(s0[:3])
@@ -117,7 +120,7 @@ def GPErgCover(pdf, nA, s0, nPix, nIter, fourier_freqs=None, freq_vars=None, u_i
 		log.append(erg_loss)
 		
 		if i > 0:
-			if np.abs(loss - prev_loss) < stop_eps:
+			if np.abs(loss - prev_loss) < 0.001:
 				no_change_count += 1
 			else:
 				no_change_count = 0
