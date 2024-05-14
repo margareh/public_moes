@@ -9,7 +9,7 @@ from jax.lax import scan
 from functools import partial
 
 ERG_COEF = 1 # 1
-REG_COEF = 1 # 3e-2
+REG_COEF = 0.03 # 3e-2
 BOUND_COEF = 1000 # 10
 TRANSL_COEF = 1
 ANG_COEF = 1
@@ -159,7 +159,7 @@ class GPErgCalc(object):
 
 		# if freq_vars is None:
 			# lambda, the weights of different bands.
-		self.lamk = (1.+np.linalg.norm(self.k/(np.pi*scale),axis=1)**2)**(-3./2.)
+		self.lamk = (1.+np.linalg.norm(self.k/(np.pi),axis=1)**2)**(-3./2.)
 		if freq_vars is not None:
 			# self.lamk = 1 / np.prod(np.sqrt(np.array(freq_vars)), axis=1)
 			self.lamk = np.array(freq_vars) * self.lamk

@@ -7,6 +7,7 @@ import copy
 
 import matplotlib.pyplot as plt
 import public_moes.ergodic_metric as ergodic_metric
+from public_moes.ergodic_metric import GetTrajXY
 
 GLOBAL_NUM_K = 0
 
@@ -136,6 +137,17 @@ def GPErgCover(pdf, nA, s0, nPix, nIter, fourier_freqs=None, freq_vars=None, u_i
 		
 		# increment counter
 		i += 1
+
+	# print final parameters of ergodic calculation
+	print("Freqs:")
+	print(erg_calc.k)
+	print("Lambda: ")
+	print(erg_calc.lamk)
+	print("Phi:")
+	print(erg_calc.phik)
+	print("C:")
+	_, tr = GetTrajXY(get_params(opt_state), x0)
+	print(erg_calc.get_ck(tr))
 
 	# get the map predicted by the trajectory stats
 	traj_map = erg_calc.traj_stat(get_params(opt_state), x0)
