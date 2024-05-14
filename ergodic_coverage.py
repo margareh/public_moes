@@ -81,7 +81,7 @@ def GPErgCover(pdf, nA, s0, nPix, nIter, fourier_freqs=None, freq_vars=None, u_i
 	print("[INFO] ErgCover, nA =", nA, " s0 =", s0, " n_fourier =", n_fourier, " stop_eps =", stop_eps)
 	erg_calc = ergodic_metric.GPErgCalc(pdf_norm, fourier_freqs, freq_vars, nPix, scale)
 
-	opt_init, opt_update, get_params = optimizers.adam(1e-4)
+	opt_init, opt_update, get_params = optimizers.adam(5e-5)
 
 	# initial conditions
 	x0 = np.array(s0[:3])
