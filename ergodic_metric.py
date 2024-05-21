@@ -10,7 +10,7 @@ from functools import partial
 
 ERG_COEF = 1 # 1
 REG_COEF = 0.05 # 3e-2
-LENGTH_COEF = 0.1
+LENGTH_COEF = 1
 BOUND_COEF = 1000 # 10
 TRANSL_COEF = 0
 ANG_COEF = 1
@@ -156,7 +156,12 @@ class GPErgCalc(object):
 			k = np.stack([k1.ravel(), k2.ravel()]).T
 
 		else:
-			k = np.array(fourier_freqs)
+			fourier_freqs = np.array(fourier_freqs)
+			n_fourier = fourier_freqs.shape[0]
+			k1 = np.tile(fourier_freqs[:,0], (n_fourier,1))
+			k2 = np.tile(fourier_freqs[:,1], (n_fourier,1)).T
+			k = np.stack([k1.ravel(), k2.ravel()]).T
+			# k = np.array(fourier_freqs)
 
 		self.k = np.pi*k
 
