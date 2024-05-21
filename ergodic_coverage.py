@@ -158,5 +158,8 @@ def GPErgCover(pdf, nA, s0, nPix, nIter, fourier_freqs=None, freq_vars=None, u_i
 	else:
 		erg_gt = None
 
-	return get_params(opt_state), np.array(log), i, erg_gt, traj_map
+	# get loss components for final trajectory
+	loss_components = erg_calc.loss_components(u, x0)
+
+	return get_params(opt_state), np.array(log), i, erg_gt, traj_map, loss_components
 

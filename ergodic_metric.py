@@ -9,11 +9,13 @@ from jax.lax import scan
 from functools import partial
 
 ERG_COEF = 1 # 1
-REG_COEF = 0.03 # 3e-2
+REG_COEF = 0.05 # 3e-2
+LENGTH_COEF = 0.1
 BOUND_COEF = 1000 # 10
-TRANSL_COEF = 1
+TRANSL_COEF = 0
 ANG_COEF = 1
 TARGET_V = 5 # in pixels
+MIN_LENGTH = 5 # in pixels
 
 # def fDyn(x, u): # dynamics of the robot
 # 	xnew = x + np.tanh(u)
@@ -139,6 +141,7 @@ class GPErgCalc(object):
 
 		# set target velocity based on number of pixels
 		self.target_v = TARGET_V / nPix
+		self.min_length = MIN_LENGTH / nPix
 
 		self.nPix = nPix
 		# aux func
@@ -195,19 +198,23 @@ class GPErgCalc(object):
 		return ck
 
 	def fourier_ergodic_loss(self, u, x0, print_flag=False):
+		erg_loss, length_loss, bound_loss, ang_loss, control_loss = self.loss_components(u, x0)
+		if print_flag:
+			print("LOSS: erg = {:4.4f}; control = {:4.4f}, {:4.4f}; length = {:4.4f}; boundary = {:4.4f}".format(erg_loss, control_loss, ang_loss, length_loss, bound_loss))
+		return (ERG_COEF * erg_loss) + (REG_COEF * (TRANSL_COEF*control_loss+ANG_COEF*ang_loss)) + (LENGTH_COEF * length_loss) + (BOUND_COEF * bound_loss)
+	
+	def loss_components(self, u, x0):
 		xf, tr = GetTrajXY(u, x0)
 		ck = self.get_ck(tr)
-		# return np.sum(self.lamk*np.square(self.phik - ck)) \
-		    #+ 1e-2 * np.mean(u[:,0]**2) + 3e-3*np.mean(u[:,1]**2)
 		erg_loss = np.sum(self.lamk*np.square(self.phik - ck))
 		# control_loss = np.mean(u**2)
+		diffs = tr[1:]-tr[0:-1]
+		lengths = np.sum(np.square(diffs), axis=1)
+		length_loss = np.mean(np.square(self.min_length - lengths))
 		ang_loss = np.mean(u[:,1]**2, axis=0)
-		control_loss = np.mean(np.abs(u[:,0]-self.target_v), axis=0)
+		control_loss = np.mean(np.square(u[:,0]-self.target_v), axis=0)
 		bound_loss = np.sum(np.maximum(0, tr-1) + np.maximum(0, -tr))
-		if print_flag:
-			print("LOSS: erg = {:4.4f}; control = {:4.4f}, {:4.4f}; boundary = {:4.4f}".format(erg_loss, control_loss, ang_loss, bound_loss))
-
-		return (ERG_COEF * erg_loss) + (REG_COEF * (TRANSL_COEF*control_loss+ANG_COEF*ang_loss)) + (BOUND_COEF * bound_loss)
+		return erg_loss, length_loss, bound_loss, ang_loss, control_loss
 
 	def spectral_decomposition(self,nPix=100): # some question to discuss
 		phik1 = self.phik
