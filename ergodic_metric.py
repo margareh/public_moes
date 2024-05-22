@@ -8,12 +8,13 @@ import jax.numpy as np
 from jax.lax import scan
 from functools import partial
 
-ERG_COEF = 1 # 1
-REG_COEF = 0.05 # 3e-2
+ERG_COEF = 2 # 1
+REG_COEF = 0.1 # 3e-2
 LENGTH_COEF = 1
 BOUND_COEF = 1000 # 10
-TRANSL_COEF = 0
-ANG_COEF = 1
+GAP_COEF = 10
+TRANSL_COEF = 1
+ANG_COEF = 2
 TARGET_V = 5 # in pixels
 MIN_LENGTH = 5 # in pixels
 
@@ -156,12 +157,12 @@ class GPErgCalc(object):
 			k = np.stack([k1.ravel(), k2.ravel()]).T
 
 		else:
-			fourier_freqs = np.array(fourier_freqs)
-			n_fourier = fourier_freqs.shape[0]
-			k1 = np.tile(fourier_freqs[:,0], (n_fourier,1))
-			k2 = np.tile(fourier_freqs[:,1], (n_fourier,1)).T
-			k = np.stack([k1.ravel(), k2.ravel()]).T
-			# k = np.array(fourier_freqs)
+			# fourier_freqs = np.array(fourier_freqs)
+			# n_fourier = fourier_freqs.shape[0]
+			# k1 = np.tile(fourier_freqs[:,0], (n_fourier,1))
+			# k2 = np.tile(fourier_freqs[:,1], (n_fourier,1)).T
+			# k = np.stack([k1.ravel(), k2.ravel()]).T
+			k = np.array(fourier_freqs)
 
 		self.k = np.pi*k
 
@@ -203,10 +204,11 @@ class GPErgCalc(object):
 		return ck
 
 	def fourier_ergodic_loss(self, u, x0, print_flag=False):
-		erg_loss, length_loss, bound_loss, ang_loss, control_loss = self.loss_components(u, x0)
+		erg_loss, length_loss, bound_loss, ang_loss, control_loss, gap_loss = self.loss_components(u, x0)
 		if print_flag:
-			print("LOSS: erg = {:4.4f}; control = {:4.4f}, {:4.4f}; length = {:4.4f}; boundary = {:4.4f}".format(erg_loss, control_loss, ang_loss, length_loss, bound_loss))
-		return (ERG_COEF * erg_loss) + (REG_COEF * (TRANSL_COEF*control_loss+ANG_COEF*ang_loss)) + (LENGTH_COEF * length_loss) + (BOUND_COEF * bound_loss)
+			print("LOSS: erg = {:4.4f}; control = {:4.4f}, {:4.4f}; length = {:4.4f}; boundary = {:4.4f}; gap = {:4.4f}".format(erg_loss, control_loss, ang_loss, length_loss, bound_loss, gap_loss))
+		return (ERG_COEF * erg_loss) + (REG_COEF * (TRANSL_COEF * control_loss + ANG_COEF * ang_loss)) + (LENGTH_COEF * length_loss) + (BOUND_COEF * bound_loss) + (GAP_COEF * gap_loss)
+		# return (ERG_COEF * erg_loss) + (REG_COEF * (TRANSL_COEF*control_loss+ANG_COEF*ang_loss)) + (LENGTH_COEF * length_loss) + (BOUND_COEF * bound_loss)
 	
 	def loss_components(self, u, x0):
 		xf, tr = GetTrajXY(u, x0)
@@ -216,10 +218,12 @@ class GPErgCalc(object):
 		diffs = tr[1:]-tr[0:-1]
 		lengths = np.sum(np.square(diffs), axis=1)
 		length_loss = np.mean(np.square(self.min_length - lengths))
+		gap_loss = np.max(lengths)
 		ang_loss = np.mean(u[:,1]**2, axis=0)
-		control_loss = np.mean(np.square(u[:,0]-self.target_v), axis=0)
+		control_loss = np.mean(u[:,0]**2, axis=0)
+		# control_loss = np.mean(np.square(u[:,0]-self.target_v), axis=0)
 		bound_loss = np.sum(np.maximum(0, tr-1) + np.maximum(0, -tr))
-		return erg_loss, length_loss, bound_loss, ang_loss, control_loss
+		return erg_loss, length_loss, bound_loss, ang_loss, control_loss, gap_loss
 
 	def spectral_decomposition(self,nPix=100): # some question to discuss
 		phik1 = self.phik
