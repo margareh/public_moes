@@ -2,7 +2,8 @@
 import numpy as onp
 import jax.numpy as np
 # from jax.experimental import optimizers
-from jax.example_libraries import optimizers
+# from jax.example_libraries import optimizers
+import optax
 import copy
 
 import matplotlib.pyplot as plt
@@ -19,7 +20,8 @@ def ErgCover(pdf, nA, s0, n_fourier, nPix, nIter, ifDisplay, u_init=None, stop_e
 	print("[INFO] ErgCover, nA =", nA, " s0 =", s0, " n_fourier =", n_fourier, " stop_eps =", stop_eps)
 	erg_calc = ergodic_metric.ErgCalc(pdf, n_fourier, nPix)
 
-	opt_init, opt_update, get_params = optimizers.adam(1e-3)
+	# opt_init, opt_update, get_params = optimizers.adam(1e-3)
+	optim = optax.adam(1e-3)
 
 	# initial conditions
 	x0 = np.array(s0[:3])
@@ -30,7 +32,8 @@ def ErgCover(pdf, nA, s0, n_fourier, nPix, nIter, ifDisplay, u_init=None, stop_e
 		u = np.array(u_init)
 	# u = np.ones((nA,2))*0.1
 	# u = 0.05*(onp.random.random((nA,2))*2-1) # each component range from [-1,1]*0.05
-	opt_state = opt_init(u)
+	# opt_state = opt_init(u)
+	opt_state = optim.init(u)
 	log = []
 
 	# if stop_eps > 0:
@@ -40,9 +43,12 @@ def ErgCover(pdf, nA, s0, n_fourier, nPix, nIter, ifDisplay, u_init=None, stop_e
 	loss = 1e5
 	while (i < nIter) and (loss >= stop_eps):
 	# for i in range(nIter):
-		g = erg_calc.gradient(get_params(opt_state), x0)
-		opt_state = opt_update(i, g, opt_state)
-		u = get_params(opt_state)
+		# g = erg_calc.gradient(get_params(opt_state), x0)
+		# opt_state = opt_update(i, g, opt_state)
+		# u = get_params(opt_state)
+		g = erg_calc.gradient(u, x0)
+		updates, opt_state = optim.update(g, opt_state)
+		u = optax.apply_updates(u, updates)
 		log.append(erg_calc.fourier_ergodic_loss(u, x0).copy())
 
 		# ## check for convergence
@@ -62,10 +68,10 @@ def ErgCover(pdf, nA, s0, n_fourier, nPix, nIter, ifDisplay, u_init=None, stop_e
 		plt.pause(1)
 		plt.savefig("build/plot_traj/MOES-O2-nA_"+str(nA)+"_num_"+str(kkk)+".png", bbox_inches='tight',dpi=200)
 
-	return get_params(opt_state), log, i
+	return u, log, i
 
 
-def GPErgCover(pdf, nA, s0, nPix, nIter, fourier_freqs=None, freq_vars=None, u_init=None, stop_eps=-1, pdf_gt=None, scale=1, lr=1e-3):
+def GPErgCover(pdf, nA, s0, nPix, nIter, fourier_freqs=None, freq_vars=None, u_init=None, stop_eps=-1, pdf_gt=None, scale=1, lr=5e-4):
 	"""
 	run ergodic coverage over a info map. Modified from public_moes, which was modified from Ian's code.
 	return a list of control inputs.
@@ -76,12 +82,15 @@ def GPErgCover(pdf, nA, s0, nPix, nIter, fourier_freqs=None, freq_vars=None, u_i
 		n_fourier = len(fourier_freqs)
 
 	# scale the pdf to [0,1]
-	pdf_norm = (pdf - np.min(pdf)) / (np.max(pdf) - np.min(pdf))
+	# pdf_norm = (pdf - np.min(pdf)) / (np.max(pdf) - np.min(pdf))
+	# want all info in pdf to sum to 1
+	pdf_norm = pdf / np.sum(pdf)
 	
 	print("[INFO] ErgCover, nA =", nA, " s0 =", s0, " n_fourier =", n_fourier, " stop_eps =", stop_eps)
 	erg_calc = ergodic_metric.GPErgCalc(pdf_norm, fourier_freqs, freq_vars, nPix, scale)
 
-	opt_init, opt_update, get_params = optimizers.adam(step_size=lr, b1=0.9, b2=0.999)
+	# opt_init, opt_update, get_params = optimizers.adam(step_size=lr, b1=0.9, b2=0.999)
+	optim = optax.adam(lr)
 
 	# initial conditions
 	x0 = np.array(s0[:3])
@@ -92,7 +101,8 @@ def GPErgCover(pdf, nA, s0, nPix, nIter, fourier_freqs=None, freq_vars=None, u_i
 		u = np.array(u_init)
 	# u = np.ones((nA,2))*0.1
 	# u = 0.05*(onp.random.random((nA,2))*2-1) # each component range from [-1,1]*0.05
-	opt_state = opt_init(u)
+	# opt_state = opt_init(u)
+	opt_state = optim.init(u)
 	log = []
 
 	# if stop_eps > 0:
@@ -110,9 +120,12 @@ def GPErgCover(pdf, nA, s0, nPix, nIter, fourier_freqs=None, freq_vars=None, u_i
 		if no_change_count > 200:
 			break
 
-		g = erg_calc.gradient(get_params(opt_state), x0)
-		opt_state = opt_update(i, g, opt_state)
-		u = get_params(opt_state)
+		# g = erg_calc.gradient(get_params(opt_state), x0)
+		# opt_state = opt_update(i, g, opt_state)
+		# u = get_params(opt_state)
+		g = erg_calc.gradient(u, x0)
+		updates, opt_state = optim.update(g, opt_state)
+		u = optax.apply_updates(u, updates)
 
 		print_flag = True if i % 100 == 0 else False
 		erg_loss = erg_calc.fourier_ergodic_loss(u, x0, print_flag).copy()
@@ -146,11 +159,11 @@ def GPErgCover(pdf, nA, s0, nPix, nIter, fourier_freqs=None, freq_vars=None, u_i
 	print("Phi:")
 	print(erg_calc.phik)
 	print("C:")
-	_, tr = GetTrajXY(get_params(opt_state), x0)
+	_, tr = GetTrajXY(u, x0)
 	print(erg_calc.get_ck(tr))
 
 	# get the map predicted by the trajectory stats
-	traj_map = erg_calc.traj_stat(get_params(opt_state), x0)
+	traj_map = erg_calc.traj_stat(u, x0)
 
 	# get ergodic metric on ground truth map if available using usual frequencies
 	if pdf_gt is not None:
@@ -161,5 +174,5 @@ def GPErgCover(pdf, nA, s0, nPix, nIter, fourier_freqs=None, freq_vars=None, u_i
 	# get loss components for final trajectory
 	loss_components = erg_calc.loss_components(u, x0)
 
-	return get_params(opt_state), np.array(log), i, erg_gt, traj_map, loss_components
+	return u, np.array(log), i, erg_gt, traj_map, loss_components
 
