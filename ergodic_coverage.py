@@ -82,9 +82,9 @@ def GPErgCover(pdf, nA, s0, nPix, nIter, fourier_freqs=None, freq_vars=None, u_i
 		n_fourier = len(fourier_freqs)
 
 	# scale the pdf to [0,1]
-	# pdf_norm = (pdf - np.min(pdf)) / (np.max(pdf) - np.min(pdf))
+	pdf_norm = (pdf - np.min(pdf)) / (np.max(pdf) - np.min(pdf))
 	# want all info in pdf to sum to 1
-	pdf_norm = pdf / np.sum(pdf)
+	# pdf_norm = pdf / np.sum(pdf)
 	
 	print("[INFO] ErgCover, nA =", nA, " s0 =", s0, " n_fourier =", n_fourier, " stop_eps =", stop_eps)
 	erg_calc = ergodic_metric.GPErgCalc(pdf_norm, fourier_freqs, freq_vars, nPix, scale)
