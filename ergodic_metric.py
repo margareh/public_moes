@@ -8,7 +8,7 @@ import jax.numpy as np
 from jax.lax import scan
 from functools import partial
 
-ERG_COEF = 2 # 1
+ERG_COEF = 1 # 1
 REG_COEF = 0.1 # 3e-2
 LENGTH_COEF = 1
 BOUND_COEF = 1000 # 10
@@ -27,7 +27,7 @@ def fDiffDrive(x0, u):
 	x0 = (x,y,theta)
 	u = (v,w)
 	"""
-	x = x0 + np.array([np.cos(x0[2])*np.abs(u[0]), np.sin(x0[2])*np.abs(u[0]), 10*u[1]])
+	x = x0 + np.array([np.cos(x0[2])*np.abs(u[0]), np.sin(x0[2])*np.abs(u[0]), u[1]])
 	return x, x0
 
 def get_hk(k): # normalizing factor for basis function
